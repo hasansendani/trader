@@ -1,4 +1,3 @@
 aiohttp
-fastapi
 motor
 apscheduler
