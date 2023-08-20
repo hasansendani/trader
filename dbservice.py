@@ -1,32 +1,19 @@
-import motor.motor_asyncio
-import time
-import datetime
+from motor.motor_asyncio import AsyncIOMotorClient
+from redis import Redis
+from decouple import config
 
-client = motor.motor_asyncio.AsyncIOMotorClient('mongodb://root:example@0.0.0.0:27017')
-db = client.test
-collection = db.get_collection('test')
+client: AsyncIOMotorClient = AsyncIOMotorClient(config("MONGO_HOST"))
+db = client.market_making
+collection = db.last_trades
+redis_client = Redis(config('REDIS_HOST'), port=6379, db=0)
+ttl = int(config('REDIS_TTL'))
 
-
-async def unifier(documents):
-    docs = []
-    for document in documents:
-        doc = {}
-        doc['pair'], doc['price'], doc['amount'], doc['total'] =\
-        document['symbol'], float(document['price']), float(document['quantity']), float(document['sum'])
-        doc['side'] = 'buy' if document['isBuyOrder'] == True else 'sell'
-        doc['time'] = int(time.mktime(datetime.datetime.strptime(document['timestamp'], "%Y-%m-%dT%H:%M:%SZ").timetuple()))
-        doc['unifier'] = hex(hash((doc['time'] + hash(doc['pair']) + hash(doc['amount']) + hash(doc['price']))))
-        docs.append(doc)
-
-    return docs
-
-
-async def write(documents):
-    docs = await unifier(documents)
-    for document in docs:
+async def write(document):
+    unifier = document['unifier']
+    if not redis_client.exists(unifier):
         try:
             await collection.insert_one(document)
+            redis_client.setex(unifier, ttl, 1)
         except Exception as e:
             print(e)
-
 
