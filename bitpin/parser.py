@@ -19,6 +19,7 @@ def get_last_trades_parser(data):
             'price': match['price'],
             'amount': match['match_amount'],
             'type': match['type'],
+            'source': 'bitpin',
             'unifier': md5(match['match_id'].encode()).hexdigest()[:10]
         })
     return matches
