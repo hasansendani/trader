@@ -1,25 +1,22 @@
 import aiohttp
-from ..dbservice import write
 
-async def get_price():
-    async with aiohttp.ClientSession() as session:
-        async with session.get('https://api.wallex.ir/v1/all-markets') as resp:
-            data = await resp.json(encoding='utf-8')
-            return data
+MAIN_URL="https://api.wallex.ir/v1/"
         
 
-async def get_last_trade(symbol, loop):
+async def get_last_trade(symbol):
     async with aiohttp.ClientSession() as session:
-        get_url = 'https://api.wallex.ir/v1/trades?symbol=' + symbol
-        async with session.get(get_url) as resp:
+        url = MAIN_URL + 'trades?symbol=' + symbol
+        async with session.get(url) as resp:
             data = await resp.json(encoding='utf-8')
-            data = data["result"]["latestTrades"][:20]
-            loop.create_task(write(data))
-            # print(data)
-            return data
+            if resp.status == 200:
+                return data
+            raise ConnectionError(f'response code is {resp.status}')
 
 async def get_symbols():
+    url = MAIN_URL + 'all-markets'
     async with aiohttp.ClientSession() as session:
-        async with session.get('https://api.wallex.ir/v1/all-markets') as resp:
-            data = await resp.json(encoding='utf-8')
-            return data
+        async with session.get(url) as resp:
+            if resp.status == 200:
+                data = await resp.json(encoding='utf-8')
+                return data
+            raise ConnectionError(f'response code is {resp.status}')
