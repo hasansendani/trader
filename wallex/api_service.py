@@ -8,7 +8,7 @@ async def get_last_trade(symbol):
         url = MAIN_URL + 'trades?symbol=' + symbol
         async with session.get(url) as resp:
             data = await resp.json(encoding='utf-8')
-            if resp.status == 200:
+            if resp.status == 200 and 'result' in data:
                 return data
             raise ConnectionError(f'response code is {resp.status}')
 
