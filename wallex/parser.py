@@ -1,7 +1,6 @@
 import json, datetime
 from hashlib import md5
-
-def las_trade_parser(data):
+def last_trade_parser(data):
     raw_trades = data['result']['latestTrades']
     trades = []
     for raw_trade in raw_trades:
@@ -18,7 +17,7 @@ def las_trade_parser(data):
         )
     return trades
 
-def get_symbols_parser(data, filter: str = []):
+def get_symbols_parser(data, filter: list[str] = []):
     symbols = data["result"]['symbols']
     markets = {}
     for key, val in symbols.items():
