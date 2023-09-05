@@ -16,4 +16,5 @@ async def write(document):
             redis_client.setex(unifier, ttl, 1)
         except Exception as e:
             print(e)
-
+    else: 
+        raise ValueError()
