@@ -6,7 +6,11 @@ from bitpin.markets import markets
 from dbservice import write
 from wallex.api_service import get_last_trade as last_wallex, get_symbols
 from wallex.parser import last_trade_parser as last_trade_parser_wallex , get_symbols_parser
-import json 
+import json
+from ramzinex.api_services import get_last_trades as last_trades_ramzinex\
+    ,get_symbols as get_symbols_ramzinex
+from ramzinex.parser import get_recent_parser as get_recent_parser_ramzinex\
+    , get_symbols_parser as get_symbols_parser_ramzinex
 
 
 async def call_and_save_bitpin( key, val):
@@ -34,7 +38,7 @@ async def get_wallex_data():
     tasks = []
     for market in markets.keys():
         tasks.append(call_and_save_wallex(market))
-    asyncio.gather(*tasks)
+    await asyncio.gather(*tasks)
 
 async def get_bitpin_data():
     tasks = []
@@ -42,15 +46,30 @@ async def get_bitpin_data():
         tasks.append(call_and_save_bitpin( key, val))
     await asyncio.gather(*tasks)
 
+async def call_and_save_ramzinex(market_name, pair_id):
+    data = await last_trades_ramzinex(pair_id)
+    matches = get_recent_parser_ramzinex(data, market_name)
+    for match in matches:
+        try:
+            await write(match)
+        except ValueError:
+            break
+
+async def get_ramzinx_data():
+    symbols = get_symbols_parser_ramzinex(await get_symbols_ramzinex())
+    tasks = []
+    for market_name, pair_id in symbols.items():
+        tasks.append(call_and_save_ramzinex(market_name, pair_id))
+    await asyncio.gather(*tasks)
 
 async def main():
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(get_bitpin_data, 'interval', minutes=2)
-    scheduler.add_job(get_wallex_data, 'interval', minutes=2)
+    scheduler.add_job(get_bitpin_data, 'interval', minutes=3)
+    scheduler.add_job(get_wallex_data, 'interval', minutes=3)
+    scheduler.add_job(get_ramzinx_data, 'interval', minutes=3)
     scheduler.start()
-    while True:
-        await asyncio.sleep(1000)
-
+    event = asyncio.Event()
+    await event.wait()
 
 if __name__ == "__main__":
     
