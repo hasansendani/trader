@@ -1,6 +1,6 @@
 import datetime
 from hashlib import md5
-def get_symbols_parser(data, filter = []) -> []:
+def get_symbols_parser(data, filter = []) -> list:
     results = []
     for market in data['results']:
         if 'otc_market' in market and market['otc_market'] == False:
@@ -18,7 +18,7 @@ def get_symbols_parser(data, filter = []) -> []:
                 filtered_result.append(res)
         return filtered_result
 
-def get_last_trades_parser(data):
+def get_last_trades_parser(data, market_name):
     matches = []
     for match in data:
         matches.append({
@@ -26,6 +26,7 @@ def get_last_trades_parser(data):
             'price': match['price'],
             'amount': match['match_amount'],
             'type': match['type'],
+            'market_name': market_name,
             'source': 'bitpin',
             'unifier': md5(match['match_id'].encode()).hexdigest()[:10]
         })
