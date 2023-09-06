@@ -19,14 +19,3 @@ async def get_symbols():
    return await get_data(url)   
 
 
-
-# trade_object = {
-#             'pair': pair_name,
-#             'price': trade[0],
-#             'amount': trade[1],
-#             'total': trade[0] * trade[1],
-#             'side': trade[3],
-#             'time': trade[4],
-#             'unifier': trade[5]
-#         }
-
