@@ -8,7 +8,7 @@ def get_symbols_parser(data, filter: list[str] = []):
     return pairs
     
 
-def get_recent_parser(data, market_name):
+def get_recent_parser(data, market_name: str):
     matches = []
 
     if data:
@@ -18,7 +18,7 @@ def get_recent_parser(data, market_name):
                 "price": match[0],
                 "amount": match[1],
                 "type": match[3],
-                "market_name": market_name,
+                "market_name": market_name.upper(),
                 "source": "ramzinex",
                 "unifier": match[5][:10]
             })
