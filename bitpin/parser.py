@@ -24,7 +24,7 @@ def get_last_trades_parser(data, market_name):
         matches.append({
             'time': datetime.datetime.fromtimestamp(int(match['time'])).isoformat(),
             'price': match['price'],
-            'amount': match['match_amount'],
+            'amount': float(match['match_amount']),
             'type': match['type'],
             'market_name': market_name,
             'source': 'bitpin',
