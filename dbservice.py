@@ -2,14 +2,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from redis import Redis
 from decouple import config
 
-redis_client = Redis(config('REDIS_HOST'), port=6379, db=0)
+redis_client = Redis(str(config('REDIS_HOST')), port=6379, db=0)
 ttl = int(config('REDIS_TTL'))
 
 async def write(document):
-    client: AsyncIOMotorClient = AsyncIOMotorClient(config("MONGO_HOST"))
+    client = get_client()
     db = client.market_making
     collection = db.last_trades
-
 
     unifier = document['unifier']
     if not redis_client.exists(unifier):
@@ -22,3 +21,8 @@ async def write(document):
             client.close()
     else: 
         raise ValueError()
+    
+
+def get_client():
+    client = AsyncIOMotorClient(config("MONGO_HOST"))
+    return client
