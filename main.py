@@ -93,9 +93,9 @@ async def get_nobitex_data():
 
 async def main():
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(get_bitpin_data, 'interval', minutes=3)
-    scheduler.add_job(get_wallex_data, 'interval', minutes=3)
-    scheduler.add_job(get_ramzinx_data, 'interval', minutes=3)
+    scheduler.add_job(get_bitpin_data, 'interval', minutes=2)
+    scheduler.add_job(get_wallex_data, 'interval', minutes=2)
+    scheduler.add_job(get_ramzinx_data, 'interval', minutes=2)
     scheduler.add_job(get_nobitex_data, 'interval', minutes=1)
     scheduler.start()
     event = asyncio.Event()

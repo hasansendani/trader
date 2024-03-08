@@ -19,4 +19,7 @@ markets = {
     "FTMIRT": 186,
     "DAIIRT": 66,
     "OPIRT": 442,
+    "LINKIRT": 18,
+    "AVAXIRT": 110,
+    "UNIIRT": 44
     }
