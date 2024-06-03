@@ -21,5 +21,6 @@ markets = {
     "OPIRT": 442,
     "LINKIRT": 18,
     "AVAXIRT": 110,
-    "UNIIRT": 44
+    "UNIIRT": 44,
+    "NOTIRT": 772,
     }
