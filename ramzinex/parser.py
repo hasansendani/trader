@@ -23,7 +23,8 @@ def get_recent_parser(data, market_name: str):
                 "type": match[3],
                 "market_name": market_name.upper(),
                 "source": "ramzinex",
-                "unifier": match[5][:10]
+                "unifier": match[5][:10],
+                "changed_timezone": True
             })
         return matches
     else:

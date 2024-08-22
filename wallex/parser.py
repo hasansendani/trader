@@ -16,7 +16,8 @@ def last_trade_parser(data):
                 'type': 'buy' if raw_trade['isBuyOrder'] else 'sell',
                 'market_name': raw_trade['symbol'].replace('TMN', 'IRT'),
                 'source': 'wallex',
-                'unifier': md5((raw_trade['timestamp'] + raw_trade['quantity']).encode()).hexdigest()[:10]
+                'unifier': md5((raw_trade['timestamp'] + raw_trade['quantity']).encode()).hexdigest()[:10],
+                'changed_timezone': True
             }
         )
     return trades
