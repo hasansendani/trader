@@ -1,5 +1,6 @@
-from hashlib import md5 
-import datetime
+from datetime import datetime, timedelta
+
+
 def get_symbols_parser(data, filter: list[str] = []):
     pairs = {}
     for pair in data:
@@ -13,8 +14,10 @@ def get_recent_parser(data, market_name: str):
 
     if data:
         for match in data:
+            time_str = (datetime.strptime(match[2], '%Y-%m-%d %H:%M:%S') +
+                        timedelta(hours=3, minutes=30)).isoformat()
             matches.append({
-                "time": datetime.datetime.strptime(match[2], '%Y-%m-%d %H:%M:%S').isoformat(),
+                "time": time_str,
                 "price": match[0],
                 "amount": match[1],
                 "type": match[3],
