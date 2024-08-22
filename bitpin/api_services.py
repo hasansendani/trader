@@ -10,6 +10,7 @@ async def get_last_trades(market_id):
             data = await resp.json(encoding='utf-8')
             return data
 
+
 async def get_symbols():
     url = BASE_URL + 'mkt/markets/'
     async with ClientSession() as session:
