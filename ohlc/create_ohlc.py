@@ -38,29 +38,24 @@ async def get_data_for_a_day(date):
 
 
 def calculate_ohlc(trades_df: pd.DataFrame):
+
+    trades_df['time'] = pd.to_datetime(trades_df['time'])
+    trades_df.set_index('time', inplace=True)
+    # print(trades_df.dtypes)  # Check the data types
+    # print(trades_df.index)
     ohlc_dict = {}
     for label, interval in INTERVALS.items():
-        resampled = trades_df['price'].resample(interval, on='time').ohlc().agg({
-            'price': ['first', 'max', 'min', 'last', 'mean', 'median'],
-            'amount': 'sum',
-            'price': 'count'
-        })
+        print(f"Processing interval: {label}")
 
-        resampled.columns = [
-            '_'.join(col).strip() for col in resampled.columns.values
-            ]
-        resampled = resampled.rename(columns={
-            'price_first': 'open',
-            'price_max': 'high',
-            'price_min': 'low',
-            'price_last': 'close',
-            'price_mean': 'mean',
-            'price_median': 'median',
-            'amount_sum': 'volume',
-            'price_count': 'count'
-        })
-
-        resampled.dropna(subset=['open', 'high', 'low', 'close'])
+        resampled = trades_df['price'].resample(interval).ohlc()
+        resampled['volume'] = trades_df['amount'].resample(interval).sum()
+        resampled['mean'] = trades_df['price'].resample(interval).mean()
+        resampled['median'] = trades_df['price'].resample(interval).median()
+        resampled['count'] = trades_df['price'].resample(interval).count()
+        if not {'open', 'high', 'low', 'close'}.issubset(resampled.columns):
+            continue
+        
+        resampled = resampled.dropna(subset=['open', 'high', 'low', 'close'])
         ohlc_dict[label] = resampled
     return ohlc_dict
 
@@ -76,9 +71,10 @@ async def create_ohlc_for_a_day(date):
                 'amount': trade['amount'],
                 'source': trade['source']
             })
-            trades_df = pd.DataFrame(all_trades)
-            ohlc_data = calculate_ohlc(trades_df)
-            await save_ohlc_data(ohlc_data, date, source)
+        trades_df = pd.DataFrame(all_trades)
+        ohlc_data = calculate_ohlc(trades_df)
+        print(ohlc_data)
+        await save_ohlc_data(ohlc_data, date, source)
 
 
 async def save_ohlc_data(ohlc_data, date, source):
