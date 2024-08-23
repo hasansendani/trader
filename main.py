@@ -6,10 +6,11 @@ from bitpin.markets import markets
 from dbservice import write
 from wallex.api_service import get_last_trade as last_wallex, get_symbols
 from wallex.parser import last_trade_parser as last_trade_parser_wallex, get_symbols_parser
-import json
+from datetime import datetime
 from ramzinex.api_services import get_last_trades as last_trades_ramzinex, get_symbols as get_symbols_ramzinex
 from ramzinex.parser import get_recent_parser as get_recent_parser_ramzinex, get_symbols_parser as get_symbols_parser_ramzinex
 
+from ohlc import create_ohlc
 
 
 async def call_and_save_nobitex(market_name):
@@ -52,6 +53,7 @@ async def call_and_save_ramzinex(market_name, pair_id):
         except ValueError:
             break
 
+
 async def get_wallex_data():
     markets = get_symbols_parser(await get_symbols(), ['TMN'])
 
@@ -68,15 +70,12 @@ async def get_bitpin_data():
     await asyncio.gather(*tasks)
 
 
-
-
 async def get_ramzinx_data():
     symbols = get_symbols_parser_ramzinex(await get_symbols_ramzinex())
     tasks = []
     for market_name, pair_id in symbols.items():
         tasks.append(call_and_save_ramzinex(market_name, pair_id))
     await asyncio.gather(*tasks)
-
 
 
 async def get_nobitex_data():
@@ -90,7 +89,6 @@ async def get_nobitex_data():
     await asyncio.gather(*tasks)
 
 
-
 async def main():
     scheduler = AsyncIOScheduler()
     scheduler.add_job(get_bitpin_data, 'interval', minutes=2)
@@ -102,6 +100,15 @@ async def main():
     await event.wait()
 
 
-if __name__ == "__main__":
+async def run_ohlc():
+    await create_ohlc.create_ohlc_for_a_day(datetime(2024, 8, 21))
 
-    asyncio.run(main())
+if __name__ == "__main__":
+    import sys
+    param = sys.argv[1] if len(sys.argv) > 1 else None
+    if param == 'crawler':
+        asyncio.run(main())
+    elif param == 'ohlc':
+        asyncio.run(run_ohlc())
+    else:
+        print('No such parameter')
