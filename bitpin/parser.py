@@ -26,11 +26,12 @@ def get_last_trades_parser(data, market_name):
     for match in data:
         matches.append({
             'time': datetime.fromtimestamp(int(match['time'])).isoformat(),
-            'price': match['price'],
+            'price': float(match['price']),
             'amount': float(match['match_amount']),
             'type': match['type'],
             'market_name': market_name,
             'source': 'bitpin',
-            'unifier': md5(match['match_id'].encode()).hexdigest()[:10]
+            'unifier': md5(match['match_id'].encode()).hexdigest()[:10],
+            'price_update_type_flag': True
         })
     return matches
