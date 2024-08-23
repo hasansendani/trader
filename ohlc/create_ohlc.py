@@ -75,10 +75,9 @@ async def create_ohlc_for_a_day(date):
                 'source': trade['source'],
                 'market_name': trade['market_name']
             })
-        trades_df = pd.DataFrame(all_trades)
-        ohlc_data = calculate_ohlc(trades_df)
-        print(ohlc_data)
-        await save_ohlc_data(ohlc_data, date, source)
+    trades_df = pd.DataFrame(all_trades)
+    ohlc_data = calculate_ohlc(trades_df)
+    await save_ohlc_data(ohlc_data, date, source)
 
 
 async def save_ohlc_data(ohlc_data, date, source):
