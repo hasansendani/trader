@@ -81,4 +81,23 @@ async def create_ohlc_for_a_day(date):
 
 
 async def save_ohlc_data(ohlc_data, date, source):
-    pass
+    client = get_client()
+    db = client[DB_NAME]
+    ohlc_collection = db[OHLC_COLLECTION_NAME]
+
+    for market_name, intervals_data in ohlc_data.items():
+        for interval, df in intervals_data.items():
+            # Convert the DataFrame to a dictionary of records
+            records = df.reset_index().to_dict('records')
+
+            # Prepare the data for insertion
+            for record in records:
+                record['market_name'] = market_name
+                record['interval'] = interval
+                record['source'] = source
+                record['date'] = date.strftime('%Y-%m-%d')
+
+            if records:
+                await ohlc_collection.insert_many(records)
+
+    client.close()
