@@ -46,8 +46,9 @@ def calculate_ohlc(trades_df: pd.DataFrame):
     # print(trades_df.dtypes)  # Check the data types
     # print(trades_df.index)
     ohlc_dict = {}
-    for label, interval in INTERVALS.items():
-        print(f"Processing interval: {label}")
+    for market, group in grouped:
+        ohlc_dict[market] = {}
+        for label, interval in INTERVALS.items():
 
             resampled = group['price'].resample(interval).ohlc()
             resampled['volume'] = group['amount'].resample(interval).sum()
