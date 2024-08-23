@@ -101,3 +101,11 @@ async def save_ohlc_data(ohlc_data, date, source):
                 await ohlc_collection.insert_many(records)
 
     client.close()
+
+
+async def create_historical_data():
+    first_date = datetime(2023, 9, 18)
+    for i in range(200):
+        date = first_date + timedelta(days=i)
+        await create_ohlc_for_a_day(date)
+

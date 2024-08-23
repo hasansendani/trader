@@ -101,7 +101,7 @@ async def main():
 
 
 async def run_ohlc():
-    await create_ohlc.create_ohlc_for_a_day(datetime(2024, 8, 21))
+    await create_ohlc.create_historical_data()
 
 if __name__ == "__main__":
     import sys
