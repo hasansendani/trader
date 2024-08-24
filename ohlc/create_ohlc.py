@@ -58,7 +58,9 @@ def calculate_ohlc(trades_df: pd.DataFrame):
             if not {'open', 'high', 'low', 'close'}.issubset(resampled.columns):
                 continue
 
-            resampled = resampled.dropna(subset=['open', 'high', 'low', 'close'])
+            resampled = resampled.dropna(subset=[
+                'open', 'high', 'low', 'close'
+                        ])
             ohlc_dict[market][label] = resampled
     return ohlc_dict
 
@@ -95,7 +97,7 @@ async def save_ohlc_data(ohlc_data, date):
                 record['market_name'] = market_name
                 record['interval'] = interval
                 record['date'] = date.strftime('%Y-%m-%d')
-                record['total'] = record['mean'] * record['count']
+                record['total'] = record['mean'] * record['volume']
 
             if records:
                 await ohlc_collection.insert_many(records)
