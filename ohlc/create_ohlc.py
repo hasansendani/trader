@@ -30,10 +30,10 @@ async def fetch_data_for_day_from_source(date, source) -> tuple[list, str]:
 
 
 async def get_data_for_a_day(date):
-    corutines = []
+    coroutines = []
     for source in LIST_OF_SOURCES:
-        corutines.append(fetch_data_for_day_from_source(date, source))
-    trades_data = await asyncio.gather(*corutines)
+        coroutines.append(fetch_data_for_day_from_source(date, source))
+    trades_data = await asyncio.gather(*coroutines)
     return trades_data
 
 
@@ -43,8 +43,6 @@ def calculate_ohlc(trades_df: pd.DataFrame):
     trades_df.set_index('time', inplace=True)
 
     grouped = trades_df.groupby("market_name")
-    # print(trades_df.dtypes)  # Check the data types
-    # print(trades_df.index)
     ohlc_dict = {}
     for market, group in grouped:
         ohlc_dict[market] = {}
@@ -55,6 +53,8 @@ def calculate_ohlc(trades_df: pd.DataFrame):
             resampled['mean'] = group['price'].resample(interval).mean()
             resampled['median'] = group['price'].resample(interval).median()
             resampled['count'] = group['price'].resample(interval).count()
+            resampled['source'] = group['source'].iloc[0]
+
             if not {'open', 'high', 'low', 'close'}.issubset(resampled.columns):
                 continue
 
@@ -65,13 +65,13 @@ def calculate_ohlc(trades_df: pd.DataFrame):
 
 async def create_ohlc_for_a_day(date):
     trades_data = await get_data_for_a_day(date)
+    all_trades = []
     for trades, source in trades_data:
-        all_trades = []
         for trade in trades:
             all_trades.append({
                 'time': datetime.strptime(trade['time'], '%Y-%m-%dT%H:%M:%S'),
                 'price': trade['price'],
-                'amount': trade['amount'],
+                'amount': float(trade['amount']),  # Ensure amount is numeric
                 'source': trade['source'],
                 'market_name': trade['market_name']
             })
@@ -108,4 +108,3 @@ async def create_historical_data():
     for i in range(200):
         date = first_date + timedelta(days=i)
         await create_ohlc_for_a_day(date)
-
