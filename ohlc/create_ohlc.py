@@ -77,10 +77,10 @@ async def create_ohlc_for_a_day(date):
             })
     trades_df = pd.DataFrame(all_trades)
     ohlc_data = calculate_ohlc(trades_df)
-    await save_ohlc_data(ohlc_data, date, source)
+    await save_ohlc_data(ohlc_data, date)
 
 
-async def save_ohlc_data(ohlc_data, date, source):
+async def save_ohlc_data(ohlc_data, date):
     client = get_client()
     db = client[DB_NAME]
     ohlc_collection = db[OHLC_COLLECTION_NAME]
@@ -94,8 +94,8 @@ async def save_ohlc_data(ohlc_data, date, source):
             for record in records:
                 record['market_name'] = market_name
                 record['interval'] = interval
-                record['source'] = source
                 record['date'] = date.strftime('%Y-%m-%d')
+                record['total'] = record['mean'] * record['count']
 
             if records:
                 await ohlc_collection.insert_many(records)
