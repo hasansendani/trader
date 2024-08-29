@@ -42,10 +42,13 @@ def calculate_ohlc(trades_df: pd.DataFrame):
     trades_df['time'] = pd.to_datetime(trades_df['time'])
     trades_df.set_index('time', inplace=True)
 
-    grouped = trades_df.groupby("market_name")
+    grouped = trades_df.groupby(["market_name", "source"])
     ohlc_dict = {}
-    for market, group in grouped:
-        ohlc_dict[market] = {}
+    for (market, source), group in grouped:
+
+        if market not in ohlc_dict:
+            ohlc_dict[market] = {}
+
         for label, interval in INTERVALS.items():
 
             resampled = group['price'].resample(interval).ohlc()
@@ -53,7 +56,7 @@ def calculate_ohlc(trades_df: pd.DataFrame):
             resampled['mean'] = group['price'].resample(interval).mean()
             resampled['median'] = group['price'].resample(interval).median()
             resampled['count'] = group['price'].resample(interval).count()
-            resampled['source'] = group['source'].iloc[0]
+            resampled['source'] = source
 
             if not {'open', 'high', 'low', 'close'}.issubset(resampled.columns):
                 continue
@@ -61,7 +64,8 @@ def calculate_ohlc(trades_df: pd.DataFrame):
             resampled = resampled.dropna(subset=[
                 'open', 'high', 'low', 'close'
                         ])
-            ohlc_dict[market][label] = resampled
+            if label not in ohlc_dict[market]:
+                ohlc_dict[market][label] = resampled
     return ohlc_dict
 
 
