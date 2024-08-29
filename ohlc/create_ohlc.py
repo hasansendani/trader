@@ -100,7 +100,8 @@ async def save_ohlc_data(ohlc_data, date):
             # Prepare the data for insertion
             for record in records:
                 market_name_str = ""
-                if market_name.startswith("1"):
+                if market_name.startswith("1") and \
+                        record['source'] == "nobitex":
                     market_name_str = market_name.split("_")[0] + \
                         market_name.split("_")[1]
                 else:
