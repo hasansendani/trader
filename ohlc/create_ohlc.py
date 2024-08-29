@@ -45,12 +45,12 @@ def calculate_ohlc(trades_df: pd.DataFrame):
     grouped = trades_df.groupby(["market_name", "source"])
     ohlc_dict = {}
     for (market, source), group in grouped:
-
-        if market not in ohlc_dict:
-            ohlc_dict[market] = {}
+        market_source_key = f"{market}_{source}"
+   
+        if market_source_key not in ohlc_dict:
+            ohlc_dict[market_source_key] = {}
 
         for label, interval in INTERVALS.items():
-
             resampled = group['price'].resample(interval).ohlc()
             resampled['volume'] = group['amount'].resample(interval).sum()
             resampled['mean'] = group['price'].resample(interval).mean()
@@ -61,11 +61,12 @@ def calculate_ohlc(trades_df: pd.DataFrame):
             if not {'open', 'high', 'low', 'close'}.issubset(resampled.columns):
                 continue
 
-            resampled = resampled.dropna(subset=[
-                'open', 'high', 'low', 'close'
-                        ])
-            if label not in ohlc_dict[market]:
-                ohlc_dict[market][label] = resampled
+            resampled = resampled.dropna(subset=['open', 'high', 'low', 'close'])
+            if label not in ohlc_dict[market_source_key]:
+                ohlc_dict[market_source_key][label] = resampled
+            else:
+                ohlc_dict[market_source_key][label] = \
+                    pd.concat([ohlc_dict[market_source_key][label], resampled])
     return ohlc_dict
 
 
@@ -98,7 +99,7 @@ async def save_ohlc_data(ohlc_data, date):
 
             # Prepare the data for insertion
             for record in records:
-                record['market_name'] = market_name
+                record['market_name'] = market_name.split("_")[0]
                 record['interval'] = interval
                 record['date'] = date.strftime('%Y-%m-%d')
                 record['total'] = record['mean'] * record['volume']
