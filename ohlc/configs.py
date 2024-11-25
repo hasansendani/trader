@@ -10,3 +10,11 @@ INTERVALS = {
     '5Min': '5min',
     '1Min': '1min'
 }
+INTERVAL_SECONDS = {
+    '1D': 86400,
+    '4H': 14400,
+    '1H': 3600,
+    '15Min': 900,
+    '5Min': 300,
+    '1Min': 60
+}
