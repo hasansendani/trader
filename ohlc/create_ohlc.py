@@ -250,7 +250,7 @@ def merge_ohlc_data(ohlc_data, trade_ohlc_data):
                     ])
 
 
-async def fetch_new_trades_in_batches(since_time, source, batch_size=5000):
+async def fetch_new_trades_in_batches(since_time, source, batch_size=2000):
     client = get_client()
     db = client[DB_NAME]
     collection = db[COLLECTION_NAME]
