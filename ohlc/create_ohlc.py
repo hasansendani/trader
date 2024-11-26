@@ -135,7 +135,7 @@ async def create_historical_data():
         await create_ohlc_for_a_day(date)
 
 
-async def update_ohlc_intervals():
+async def update_ohlc_intervals(source):
     current_time = datetime.now()
     tasks = []
 
@@ -143,7 +143,7 @@ async def update_ohlc_intervals():
         should_update, since_time = await should_update_interval(label,
                                                                  current_time)
         if should_update:
-            tasks.append(update_ohlc_for_interval(label, since_time))
+            tasks.append(update_ohlc_for_interval(label, since_time, source))
 
     if tasks:
         await asyncio.gather(*tasks)
@@ -186,12 +186,12 @@ async def get_last_saved_ohlc_time(interval_label):
         return None
 
 
-async def update_ohlc_for_interval(label, since_time):
+async def update_ohlc_for_interval(label, since_time, source):
     logging.info(f"Updating OHLC data for interval: {label}")
     interval = INTERVALS[label]
 
     # Fetch new trades since the last OHLC time for this interval
-    new_trades = await fetch_new_trades(since_time)
+    new_trades = await fetch_new_trades(since_time, source)
     if not new_trades:
         logging.info(f"No new trades to process for interval: {label}")
         return
@@ -206,7 +206,7 @@ async def update_ohlc_for_interval(label, since_time):
     await save_ohlc_data(ohlc_data, datetime.now())
 
 
-async def fetch_new_trades(since_time):
+async def fetch_new_trades(since_time, source):
     client = get_client()
     db = client[DB_NAME]
     collection = db[COLLECTION_NAME]
@@ -215,6 +215,7 @@ async def fetch_new_trades(since_time):
     if since_time:
         since_time_str = since_time.strftime('%Y-%m-%dT%H:%M:%S')
         query['time'] = {'$gt': since_time_str}
+        query['source'] = source
 
     cursor = collection.find(query)
     trades = []
