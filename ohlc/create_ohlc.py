@@ -172,22 +172,15 @@ async def get_last_saved_ohlc_time(interval_label, source):
     db = client[DB_NAME]
     ohlc_collection = db[OHLC_COLLECTION_NAME]
 
-    cursor = ohlc_collection.find(
+    doc = await ohlc_collection.find_one(
         {
             'interval': interval_label,
             'source': source
          }
-    ).sort('time', -1).limit(1)
-    latest_records = await cursor.to_list(length=1)
+    ).sort('_id', -1)
     client.close()
-    if latest_records:
-        latest_record = latest_records[0]
-        # 'time' is stored as string, convert to datetime
-        # last_time = datetime.strptime(latest_record['time'], '%Y-%m-%dT%H:%M:%S')
-        last_time = latest_record['time']
-        return last_time
-    else:
-        return None
+    last_time = doc['time']
+    return last_time
 
 
 async def update_ohlc_for_interval(label, since_time, source):

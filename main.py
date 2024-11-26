@@ -107,17 +107,17 @@ async def main():
 
 async def run_ohlc_realtime():
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(update_ohlc_intervals, 'interval', minutes=11,
-                      args=['bitpin'])
+    # scheduler.add_job(update_ohlc_intervals, 'interval', minutes=11,
+    #                   args=['bitpin'])
 
     scheduler.add_job(update_ohlc_intervals, 'interval', minutes=1,
                       args=['nobitex'])
 
-    scheduler.add_job(update_ohlc_intervals, 'interval', minutes=5,
-                      args=['ramzinex'])
+    # scheduler.add_job(update_ohlc_intervals, 'interval', minutes=5,
+    #                   args=['ramzinex'])
 
-    scheduler.add_job(update_ohlc_intervals, 'interval', minutes=6,
-                      args=['wallex'])
+    # scheduler.add_job(update_ohlc_intervals, 'interval', minutes=6,
+    #                   args=['wallex'])
 
     scheduler.start()
     event = asyncio.Event()
