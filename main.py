@@ -95,7 +95,6 @@ async def get_nobitex_data():
 
 async def main():
     scheduler = AsyncIOScheduler()
-    scheduler.configure(executors={'default': ThreadPoolExecutor(max_workers=4)})
     scheduler.add_job(get_bitpin_data, 'interval', minutes=2)
     scheduler.add_job(get_wallex_data, 'interval', minutes=1)
     scheduler.add_job(get_ramzinx_data, 'interval', minutes=1)
