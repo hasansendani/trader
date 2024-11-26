@@ -173,14 +173,19 @@ async def get_last_saved_ohlc_time(interval_label, source):
     ohlc_collection = db[OHLC_COLLECTION_NAME]
 
     doc = await ohlc_collection.find_one(
-        {
-            'interval': interval_label,
-            'source': source
-         }
-    ).sort('_id', -1)
+            {
+                'interval': interval_label,
+                'source': source
+            },
+            sort=[('time', -1)]
+        )
     client.close()
-    last_time = doc['time']
-    return last_time
+    if doc:
+        # 'time' is stored as a string, convert to datetime
+        last_time = datetime.strptime(doc['time'], '%Y-%m-%dT%H:%M:%S')
+        return last_time
+    else:
+        return None
 
 
 async def update_ohlc_for_interval(label, since_time, source):
