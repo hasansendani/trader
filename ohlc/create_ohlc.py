@@ -61,28 +61,45 @@ def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
             ohlc_dict[market_source_key] = {}
 
         for label, interval in intervals.items():
-            resampled = group['price'].resample(interval).ohlc()
+            # Perform a single resample operation with multiple aggregations
+            resampled = group.resample(interval).agg({
+                'price': ['first', 'max', 'min', 'last', 'mean', 'median', 'count'],
+                'amount': 'sum'
+            })
+
+            # Flatten the MultiIndex columns
+            resampled.columns = ['_'.join(col).strip() for col in resampled.columns.values]
+
             if resampled.empty:
                 continue
 
-            resampled['volume'] = group['amount'].resample(interval).sum()
-            resampled['mean'] = group['price'].resample(interval).mean()
-            resampled['median'] = group['price'].resample(interval).median()
-            resampled['count'] = group['price'].resample(interval).count()
-            resampled['source'] = source
+            # Rename columns to match your original naming convention
+            resampled.rename(columns={
+                'price_first': 'open',
+                'price_max': 'high',
+                'price_min': 'low',
+                'price_last': 'close',
+                'price_mean': 'mean',
+                'price_median': 'median',
+                'price_count': 'count',
+                'amount_sum': 'volume'
+            }, inplace=True)
 
-            resampled = resampled.dropna(subset=['open', 'high', 'low', 'close'])
+            resampled['source'] = source
+            resampled.dropna(subset=['open', 'high', 'low', 'close'], inplace=True)
+
             if resampled.empty:
                 continue
 
             if label not in ohlc_dict[market_source_key]:
                 ohlc_dict[market_source_key][label] = resampled
             else:
-                ohlc_dict[market_source_key][label] = \
-                    pd.concat([ohlc_dict[market_source_key][label], resampled])
+                ohlc_dict[market_source_key][label] = pd.concat([
+                    ohlc_dict[market_source_key][label],
+                    resampled
+                ])
 
     return ohlc_dict
-
 
 async def create_ohlc_for_a_day(date):
     trades_data = await get_data_for_a_day(date)
@@ -90,7 +107,7 @@ async def create_ohlc_for_a_day(date):
     for trades, source in trades_data:
         for trade in trades:
             all_trades.append({
-                'time': trade['time'],  # Already converted to datetime
+                'time': trade['time'],
                 'price': float(trade['price']),
                 'amount': float(trade['amount']),
                 'source': trade['source'],
