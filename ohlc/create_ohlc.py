@@ -5,6 +5,7 @@ from .configs import DB_NAME, COLLECTION_NAME, LIST_OF_SOURCES, \
 import asyncio
 import pandas as pd
 import logging
+from pymongo import UpdateOne
 
 
 async def fetch_data_for_day_from_source(start_time, end_time, source) -> tuple[list, str]:
@@ -99,19 +100,17 @@ async def save_ohlc_data(ohlc_data, date):
     client = get_client()
     db = client[DB_NAME]
     ohlc_collection = db[OHLC_COLLECTION_NAME]
+    bulk_operations = []
 
     for market_name, intervals_data in ohlc_data.items():
         for interval, df in intervals_data.items():
             # Convert the DataFrame to a list of records
             records = df.reset_index().to_dict('records')
 
-            # Prepare the data for insertion
+            # Prepare the data for upsert operations
             for record in records:
-                market_name_str = ""
-                if market_name.startswith("1") and \
-                        record['source'] == "nobitex":
-                    market_name_str = market_name.split("_")[0] + \
-                        market_name.split("_")[1]
+                if market_name.startswith("1") and record['source'] == "nobitex":
+                    market_name_str = market_name.split("_")[0] + market_name.split("_")[1]
                 else:
                     market_name_str = market_name.split("_")[0]
 
@@ -119,11 +118,23 @@ async def save_ohlc_data(ohlc_data, date):
                 record['interval'] = interval
                 record['date'] = date.strftime('%Y-%m-%d')
                 record['total'] = record['mean'] * record['volume']
-                # Convert 'time' index to string
                 record['time'] = record['time'].strftime('%Y-%m-%dT%H:%M:%S')
 
-            if records:
-                await ohlc_collection.insert_many(records)
+                filter_query = {
+                    'market_name': record['market_name'],
+                    'source': record['source'],
+                    'interval': record['interval'],
+                    'time': record['time']
+                }
+                update_operation = {
+                    '$set': record
+                }
+                bulk_operations.append(
+                    UpdateOne(filter_query, update_operation, upsert=True)
+                )
+
+    if bulk_operations:
+        await ohlc_collection.bulk_write(bulk_operations, ordered=False)
 
     client.close()
 
@@ -136,6 +147,8 @@ async def create_historical_data():
 
 
 async def update_ohlc_intervals(source):
+    logging.info(f'call for {source}')
+    
     current_time = datetime.now()
     tasks = []
 
@@ -182,7 +195,7 @@ async def get_last_saved_ohlc_time(interval_label, source):
     client.close()
     if doc:
         # 'time' is stored as a string, convert to datetime
-        last_time = datetime.strptime(doc['time'], '%Y-%m-%dT%H:%M:%S')
+        last_time = doc['time']
         return last_time
     else:
         return None
