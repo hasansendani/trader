@@ -9,6 +9,7 @@ from pymongo import UpdateOne
 
 logging.basicConfig(level=logging.INFO)
 
+
 async def fetch_data_for_day_from_source(start_time, end_time, source) -> tuple[list, str]:
     if not end_time:
         end_time = start_time + timedelta(days=1)
@@ -46,6 +47,7 @@ async def get_data_for_a_day(date):
 
 
 def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
+    logging.info(f"calculating ohlc for {len(trades_df)} trades")
     if intervals is None:
         intervals = INTERVALS
 
@@ -64,12 +66,14 @@ def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
         for label, interval in intervals.items():
             # Perform a single resample operation with multiple aggregations
             resampled = group.resample(interval).agg({
-                'price': ['first', 'max', 'min', 'last', 'mean', 'median', 'count'],
+                'price': ['first', 'max', 'min', 'last',
+                          'mean', 'median', 'count'],
                 'amount': 'sum'
             })
 
             # Flatten the MultiIndex columns
-            resampled.columns = ['_'.join(col).strip() for col in resampled.columns.values]
+            resampled.columns = ['_'.join(col).strip()
+                                 for col in resampled.columns.values]
 
             if resampled.empty:
                 continue
@@ -87,7 +91,8 @@ def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
             }, inplace=True)
 
             resampled['source'] = source
-            resampled.dropna(subset=['open', 'high', 'low', 'close'], inplace=True)
+            resampled.dropna(subset=['open', 'high', 'low', 'close'],
+                             inplace=True)
 
             if resampled.empty:
                 continue
@@ -194,7 +199,7 @@ async def should_update_interval(label, current_time, source):
     last_time = await get_last_saved_ohlc_time(label, source)
 
     if last_time is None:
-        # No previous OHLC data; process all trades
+        
         return True, None
 
     elapsed_time = (current_time - last_time).total_seconds()
