@@ -140,8 +140,9 @@ async def update_ohlc_intervals(source):
     tasks = []
 
     for label in INTERVALS.keys():
-        should_update, since_time = await should_update_interval(label,
-                                                                 current_time)
+        should_update, since_time = \
+            await should_update_interval(label,
+                                         current_time, source)
         if should_update:
             tasks.append(update_ohlc_for_interval(label, since_time, source))
 
@@ -151,9 +152,9 @@ async def update_ohlc_intervals(source):
         logging.warning("No OHLC intervals to update at this time.")
 
 
-async def should_update_interval(label, current_time):
+async def should_update_interval(label, current_time, source):
     interval_seconds = INTERVAL_SECONDS[label]
-    last_time = await get_last_saved_ohlc_time(label)
+    last_time = await get_last_saved_ohlc_time(label, source)
 
     if last_time is None:
         # No previous OHLC data; process all trades
@@ -166,21 +167,24 @@ async def should_update_interval(label, current_time):
         return False, last_time
 
 
-async def get_last_saved_ohlc_time(interval_label):
+async def get_last_saved_ohlc_time(interval_label, source):
     client = get_client()
     db = client[DB_NAME]
     ohlc_collection = db[OHLC_COLLECTION_NAME]
 
-    # Find the latest OHLC record for the given interval
     cursor = ohlc_collection.find(
-        {'interval': interval_label}
+        {
+            'interval': interval_label,
+            'source': source
+         }
     ).sort('time', -1).limit(1)
     latest_records = await cursor.to_list(length=1)
     client.close()
     if latest_records:
         latest_record = latest_records[0]
         # 'time' is stored as string, convert to datetime
-        last_time = datetime.strptime(latest_record['time'], '%Y-%m-%dT%H:%M:%S')
+        # last_time = datetime.strptime(latest_record['time'], '%Y-%m-%dT%H:%M:%S')
+        last_time = latest_record['time']
         return last_time
     else:
         return None
