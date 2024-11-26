@@ -7,6 +7,7 @@ import pandas as pd
 import logging
 from pymongo import UpdateOne
 
+logging.basicConfig(level=logging.INFO)
 
 async def fetch_data_for_day_from_source(start_time, end_time, source) -> tuple[list, str]:
     if not end_time:
@@ -100,6 +101,7 @@ def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
                 ])
 
     return ohlc_dict
+
 
 async def create_ohlc_for_a_day(date):
     trades_data = await get_data_for_a_day(date)
