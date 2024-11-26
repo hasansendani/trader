@@ -1,16 +1,20 @@
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor
 from bitpin.api_services import get_last_trades as last_bitpin
 from bitpin.parser import get_last_trades_parser as last_trade_parser_bitpin
 from bitpin.markets import markets
 from dbservice import write
 from wallex.api_service import get_last_trade as last_wallex, get_symbols
-from wallex.parser import last_trade_parser as last_trade_parser_wallex, get_symbols_parser
+from wallex.parser import last_trade_parser as last_trade_parser_wallex, \
+    get_symbols_parser
 from datetime import datetime
-from ramzinex.api_services import get_last_trades as last_trades_ramzinex, get_symbols as get_symbols_ramzinex
-from ramzinex.parser import get_recent_parser as get_recent_parser_ramzinex, get_symbols_parser as get_symbols_parser_ramzinex
+from ramzinex.api_services import get_last_trades as last_trades_ramzinex, \
+    get_symbols as get_symbols_ramzinex
+from ramzinex.parser import get_recent_parser as get_recent_parser_ramzinex, \
+    get_symbols_parser as get_symbols_parser_ramzinex
 
-from ohlc import create_ohlc
+from ohlc import create_ohlc, update_ohlc_intervals
 
 
 async def call_and_save_nobitex(market_name):
@@ -91,24 +95,39 @@ async def get_nobitex_data():
 
 async def main():
     scheduler = AsyncIOScheduler()
+    scheduler.configure(executors={'default': ThreadPoolExecutor(max_workers=4)})
     scheduler.add_job(get_bitpin_data, 'interval', minutes=2)
-    scheduler.add_job(get_wallex_data, 'interval', minutes=2)
-    scheduler.add_job(get_ramzinx_data, 'interval', minutes=2)
+    scheduler.add_job(get_wallex_data, 'interval', minutes=1)
+    scheduler.add_job(get_ramzinx_data, 'interval', minutes=1)
     scheduler.add_job(get_nobitex_data, 'interval', minutes=1)
+
     scheduler.start()
     event = asyncio.Event()
     await event.wait()
 
 
-async def run_ohlc():
+async def run_ohlc_realtime():
+    scheduler = AsyncIOScheduler()
+    scheduler.configure(executors={'default': ThreadPoolExecutor(max_workers=2)})
+    scheduler.add_job(update_ohlc_intervals, 'interval', minutes=1)
+
+    scheduler.start()
+    event = asyncio.Event()
+    await event.wait()
+
+
+async def run_ohlc_historical():
     await create_ohlc.create_historical_data()
 
 if __name__ == "__main__":
     import sys
+
     param = sys.argv[1] if len(sys.argv) > 1 else None
     if param == 'crawler':
         asyncio.run(main())
-    elif param == 'ohlc':
-        asyncio.run(run_ohlc())
+    elif param == 'ohlc_historical':
+        asyncio.run(run_ohlc_historical())
+    elif param == 'ohlc_realtime':
+        asyncio.run(run_ohlc_realtime())
     else:
         print('No such parameter')
