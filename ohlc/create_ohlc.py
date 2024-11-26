@@ -53,6 +53,7 @@ def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
 
     grouped = trades_df.groupby(["market_name", "source"])
     ohlc_dict = {}
+
     for (market, source), group in grouped:
         market_source_key = f'{market}_{source}'
 
@@ -61,21 +62,25 @@ def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
 
         for label, interval in intervals.items():
             resampled = group['price'].resample(interval).ohlc()
+            if resampled.empty:
+                continue
+
             resampled['volume'] = group['amount'].resample(interval).sum()
             resampled['mean'] = group['price'].resample(interval).mean()
             resampled['median'] = group['price'].resample(interval).median()
             resampled['count'] = group['price'].resample(interval).count()
             resampled['source'] = source
 
-            if not {'open', 'high', 'low', 'close'}.issubset(resampled.columns):
+            resampled = resampled.dropna(subset=['open', 'high', 'low', 'close'])
+            if resampled.empty:
                 continue
 
-            resampled = resampled.dropna(subset=['open', 'high', 'low', 'close'])
             if label not in ohlc_dict[market_source_key]:
                 ohlc_dict[market_source_key][label] = resampled
             else:
                 ohlc_dict[market_source_key][label] = \
                     pd.concat([ohlc_dict[market_source_key][label], resampled])
+
     return ohlc_dict
 
 
@@ -201,46 +206,84 @@ async def get_last_saved_ohlc_time(interval_label, source):
         return None
 
 
+def optimize_dataframe(df):
+    for col in df.select_dtypes(include=['float']):
+        df[col] = pd.to_numeric(df[col], downcast='float')
+    for col in df.select_dtypes(include=['int']):
+        df[col] = pd.to_numeric(df[col], downcast='integer')
+    return df
+
+
 async def update_ohlc_for_interval(label, since_time, source):
-    logging.info(f"Updating OHLC data for interval: {label}")
+    logging.info(f"Updating OHLC data for interval: {label} and source: {source}")
     interval = INTERVALS[label]
 
-    # Fetch new trades since the last OHLC time for this interval
-    new_trades = await fetch_new_trades(since_time, source)
-    if not new_trades:
-        logging.info(f"No new trades to process for interval: {label}")
-        return
+    # Fetch new trades in batches
+    ohlc_data = {}
 
-    trades_df = pd.DataFrame(new_trades)
-    if trades_df.empty:
-        logging.info(f"Trades DataFrame is empty for interval: {label}")
-        return
+    async for batch in fetch_new_trades_in_batches(since_time, source):
+        trades_df = pd.DataFrame(batch)
+        optimize_dataframe(trades_df)
+        # Calculate OHLC for the batch
+        batch_ohlc_data = calculate_ohlc(trades_df, intervals={label: interval})
+        # Merge the result into ohlc_data
+        merge_ohlc_data(ohlc_data, batch_ohlc_data)
 
-    # Only calculate OHLC for the specific interval (label)
-    ohlc_data = calculate_ohlc(trades_df, intervals={label: interval})
-    await save_ohlc_data(ohlc_data, datetime.now())
+    if ohlc_data:
+        await save_ohlc_data(ohlc_data, datetime.now())
+    else:
+        logging.info(f"No new OHLC data to save for interval: {label} and source: {source}")
 
 
-async def fetch_new_trades(since_time, source):
+def merge_ohlc_data(ohlc_data, trade_ohlc_data):
+    for market_key in trade_ohlc_data:
+        if market_key not in ohlc_data:
+            ohlc_data[market_key] = trade_ohlc_data[market_key]
+        else:
+            for interval in trade_ohlc_data[market_key]:
+                if interval not in ohlc_data[market_key]:
+                    ohlc_data[market_key][interval] = trade_ohlc_data[market_key][interval]
+                else:
+                    # Concatenate the DataFrames
+                    ohlc_data[market_key][interval] = pd.concat([
+                        ohlc_data[market_key][interval],
+                        trade_ohlc_data[market_key][interval]
+                    ])
+
+
+async def fetch_new_trades_in_batches(since_time, source, batch_size=1000):
     client = get_client()
     db = client[DB_NAME]
     collection = db[COLLECTION_NAME]
 
-    query = {}
+    query = {'source': source}
     if since_time:
         since_time_str = since_time.strftime('%Y-%m-%dT%H:%M:%S')
         query['time'] = {'$gt': since_time_str}
-        query['source'] = source
 
-    cursor = collection.find(query)
-    trades = []
+    cursor = collection.find(query, projection={
+                                '_id': 0,
+                                'time': 1,
+                                'price': 1,
+                                'amount': 1,
+                                'source': 1,
+                                'market_name': 1
+                            })
+    batch = []
+
     async for doc in cursor:
-        trades.append({
-            'time': datetime.strptime(doc['time'], '%Y-%m-%dT%H:%M:%S'), 
+        batch.append({
+            'time': datetime.strptime(doc['time'], '%Y-%m-%dT%H:%M:%S'),
             'price': float(doc['price']),
             'amount': float(doc['amount']),
             'source': doc['source'],
             'market_name': doc['market_name'],
         })
+        if len(batch) == batch_size:
+            yield batch
+            batch = []
+
+    if batch:
+        yield batch
+
     client.close()
-    return trades
