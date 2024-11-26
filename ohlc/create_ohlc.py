@@ -47,7 +47,7 @@ async def get_data_for_a_day(date):
 
 
 def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
-    logging.info(f"calculating ohlc for {len(trades_df)} trades")
+    logging.info(f"calculating ohlc for {len(trades_df)} trades and in intervals: {intervals}")
     if intervals is None:
         intervals = INTERVALS
 
@@ -210,6 +210,7 @@ async def should_update_interval(label, current_time, source):
 
 
 async def get_last_saved_ohlc_time(interval_label, source):
+    logging.info(f"get last ohlc for {interval_label}, from {source}")
     client = get_client()
     db = client[DB_NAME]
     ohlc_collection = db[OHLC_COLLECTION_NAME]
@@ -274,7 +275,9 @@ def merge_ohlc_data(ohlc_data, trade_ohlc_data):
                     ])
 
 
-async def fetch_new_trades_in_batches(since_time, source, batch_size=2000):
+async def fetch_new_trades_in_batches(since_time, source, batch_size=20000):
+    logging.info(f"get new trades since {since_time}, from {source}")
+    
     client = get_client()
     db = client[DB_NAME]
     collection = db[COLLECTION_NAME]
