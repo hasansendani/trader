@@ -33,5 +33,20 @@ markets = {
     "FILIRT": 46,
     "DAIIRT": 66,
     "STORJIRT": 383,
-    "BANDIRT": 157
+    "BANDIRT": 157,
+    "XIRT": 856,
+    "MEMEFIIRT": 862,
+    "CYBERIRT": 596,
+    "XLMIRT": 22,
+    "WAVESIRT": 52,
+    "ATOMIRT": 38,
+    "INJIRT": 159,
+    "METISIRT": 365,
+    "TWTIRT": 88,
+    "COTIIRT": 177,
+    "CELRIRT": 92,
+    "WLDIRT": 574,
+    "LPTIRT": 584,
+    "ARKMIRT": 568,
+    "POLIRT": 86
     }
