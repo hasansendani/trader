@@ -195,12 +195,12 @@ async def get_last_saved_ohlc_time(interval_label, source):
                 'interval': interval_label,
                 'source': source
             },
-            sort=[('time', -1)]
+            sort=[('_id', -1)]
         )
     client.close()
     if doc:
         # 'time' is stored as a string, convert to datetime
-        last_time = doc['time']
+        last_time = datetime.strptime(doc['time'], '%Y-%m-%dT%H:%M:%S')
         return last_time
     else:
         return None
@@ -224,7 +224,6 @@ async def update_ohlc_for_interval(label, since_time, source):
     async for batch in fetch_new_trades_in_batches(since_time, source):
         trades_df = pd.DataFrame(batch)
         optimize_dataframe(trades_df)
-        # Calculate OHLC for the batch
         batch_ohlc_data = calculate_ohlc(trades_df, intervals={label: interval})
         # Merge the result into ohlc_data
         merge_ohlc_data(ohlc_data, batch_ohlc_data)
