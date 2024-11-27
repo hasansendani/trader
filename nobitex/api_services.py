@@ -13,9 +13,12 @@ async def get_json(url):
                 return data
             else:
                 return None
+
+
 async def get_symbols():
     url = BASE_URL + "v2/orderbook/all"
     return await get_json(url)
+
 
 async def get_last_trades(market_name):
     url = BASE_URL + "v2/trades/{0}".format(market_name)

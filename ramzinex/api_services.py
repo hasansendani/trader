@@ -10,9 +10,11 @@ async def get_data(url):
            if resp.status == 200 and 'data' in data:
                return data['data']
 
+
 async def get_last_trades(pair_id):
    url = BASE_URL + "orderbooks/{}/trades".format(pair_id)
    return await get_data(url)
+
 
 async def get_symbols():
    url = BASE_URL + 'pairs'
