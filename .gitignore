@@ -2,3 +2,4 @@ venv/*
 *.pyc
 .env
 .VS*
+.DS_Store
