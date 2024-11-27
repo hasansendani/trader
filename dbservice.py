@@ -5,6 +5,7 @@ from decouple import config
 redis_client = Redis(str(config('REDIS_HOST')), port=6379, db=0)
 ttl = int(config('REDIS_TTL'))
 
+
 async def write(document):
     client = get_client()
     db = client.market_making
@@ -19,10 +20,10 @@ async def write(document):
             print(e)
         finally:
             client.close()
-    else: 
+    else:
         raise ValueError()
-    
 
-def get_client():
-    client = AsyncIOMotorClient(config("MONGO_HOST"))
+
+def get_client() -> AsyncIOMotorClient:
+    client = AsyncIOMotorClient("mongodb://root:strong_password_haha@168.119.187.186:27018")
     return client
