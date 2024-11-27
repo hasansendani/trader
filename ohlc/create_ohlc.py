@@ -220,7 +220,7 @@ async def get_last_saved_ohlc_time(interval_label, source):
                 'interval': interval_label,
                 'source': source
             },
-            sort=[('_id', -1)]
+            sort=[('time', -1)]
         )
     client.close()
     if doc:
