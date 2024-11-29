@@ -204,9 +204,9 @@ async def should_update_interval(label, current_time, source):
 
     elapsed_time = (current_time - last_time).total_seconds()
     if elapsed_time >= interval_seconds:
-        return True, last_time + timedelta(seconds=interval_seconds)
+        return True, last_time
     else:
-        return False, last_time + timedelta(seconds=interval_seconds)
+        return False, last_time
 
 
 async def get_last_saved_ohlc_time(interval_label, source):
