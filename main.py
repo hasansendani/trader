@@ -119,7 +119,7 @@ async def main():
     scheduler.add_job(get_wallex_data, 'interval', minutes=1)
     scheduler.add_job(get_ramzinx_data, 'interval', minutes=1)
     scheduler.add_job(get_nobitex_data, 'interval', minutes=1)
-    scheduler.add_job(get_tabdeal_data, 'interval', minutes=3)
+    scheduler.add_job(get_tabdeal_data, 'interval', minutes=5)
     scheduler.start()
     event = asyncio.Event()
     await event.wait()
