@@ -22,8 +22,9 @@ def get_last_trade_parser(data, market_name):
             "type": "buy" if match['side_name'] == "Buy" else "sell",
             "market_name": market_name.strip().replace("_", ""),
             "source": "tabdeal",
-            "unifier": md5((str(match["created"]) + str(match['amount'])
-                            + str(match['price'])).encode()).hexdigest()[:10]
+            "unifier": md5((str(match["created"][16: -10]) +
+                            str(match['amount']) +
+                            str(match['price'])).encode()).hexdigest()[:10]
 
         } for match in data["trades"]
     ]
