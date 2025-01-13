@@ -4,11 +4,9 @@ from time import perf_counter
 
 
 def get_symbols_parser(data, filter: list[str] = []):
-    start = perf_counter()
     pairs = {}
     for pair in data:
         pairs[pair["symbol"]] = pair["id"]
-    print(f'get_symbols_parser: {perf_counter()-start:.3f}')
     return pairs
 
 

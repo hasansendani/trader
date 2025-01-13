@@ -22,10 +22,7 @@ async def get_symbols():
 
 
 async def get_last_trades(market_id):
-    print(market_id)
     url = BASE_URL + "api/trade/?market_id={}".format(market_id)
-    
     data = await get_json(url)
-    print(data)
     return data
 
