@@ -2,5 +2,11 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.autopep8"
     },
-    "python.formatting.provider": "autopep8"
+    "python.formatting.provider": "autopep8",
+    "python.analysis.typeCheckingMode": "basic",
+    "CodeGPT.Autocomplete.provider": "Ollama - codegemma:code",
+    "CodeGPT.Autocomplete.suggestionDelay": 2000,
+    "CodeGPT.Autocomplete.maxTokens": 600,
+    "CodeGPT.Autocomplete.enabled": true,
+    "CodeGPT.apiKey": "Ollama"
 }
