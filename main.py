@@ -119,7 +119,7 @@ async def main():
     scheduler.add_job(get_wallex_data, 'interval', minutes=1)
     scheduler.add_job(get_ramzinx_data, 'interval', minutes=1)
     scheduler.add_job(get_nobitex_data, 'interval', minutes=1)
-    scheduler.add_job(get_tabdeal_data, 'interval', minutes=5)
+    # scheduler.add_job(get_tabdeal_data, 'interval', minutes=5)
     scheduler.start()
     event = asyncio.Event()
     await event.wait()
@@ -127,7 +127,7 @@ async def main():
 
 async def run_ohlc_realtime():
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(update_ohlc_intervals, 'interval', minutes=2,seconds=51,
+    scheduler.add_job(update_ohlc_intervals, 'interval', minutes=2, seconds=51,
                       args=['bitpin'])
 
     scheduler.add_job(update_ohlc_intervals, 'interval', minutes=2,
