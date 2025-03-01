@@ -182,9 +182,7 @@ async def update_ohlc_intervals(source):
     tasks = []
 
     for label in INTERVALS.keys():
-        should_update, since_time = \
-            await should_update_interval(label,
-                                         current_time, source)
+        should_update, since_time = await should_update_interval(label, current_time, source)
         if should_update:
             tasks.append(update_ohlc_for_interval(label, since_time, source))
 
@@ -194,19 +192,30 @@ async def update_ohlc_intervals(source):
         logging.warning("No OHLC intervals to update at this time.")
 
 
+# ─── MODIFIED FUNCTION: should_update_interval ──────────────────────────────
 async def should_update_interval(label, current_time, source):
-    interval_seconds = INTERVAL_SECONDS[label]
-    last_time = await get_last_saved_ohlc_time(label, source)
-
-    if last_time is None:
-        
-        return True, None
-
-    elapsed_time = (current_time - last_time).total_seconds()
-    if elapsed_time >= interval_seconds:
-        return True, last_time
+    if label == '1D':
+        # For daily candle: we want to update the previous day once it is complete.
+        prev_day = current_time - timedelta(days=1)
+        start_of_prev_day = prev_day.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_prev_day = start_of_prev_day + timedelta(days=1)
+        last_time = await get_last_saved_ohlc_time(label, source)
+        # If there is no daily candle or the last candle does not fall within yesterday's boundaries, update.
+        if last_time is None or not (start_of_prev_day <= last_time < end_of_prev_day):
+            return True, start_of_prev_day
+        else:
+            return False, last_time
     else:
-        return False, last_time
+        interval_seconds = INTERVAL_SECONDS[label]
+        last_time = await get_last_saved_ohlc_time(label, source)
+        if last_time is None:
+            return True, None
+        elapsed_time = (current_time - last_time).total_seconds()
+        if elapsed_time >= interval_seconds:
+            return True, last_time
+        else:
+            return False, last_time
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 async def get_last_saved_ohlc_time(interval_label, source):
@@ -239,6 +248,7 @@ def optimize_dataframe(df):
     return df
 
 
+# ─── MODIFIED FUNCTION: update_ohlc_for_interval ─────────────────────────────
 async def update_ohlc_for_interval(label, since_time, source):
     logging.info(f"Updating OHLC data for interval: {label} and source: {source}")
     interval = INTERVALS[label]
@@ -246,7 +256,7 @@ async def update_ohlc_for_interval(label, since_time, source):
     # Fetch new trades in batches
     ohlc_data = {}
 
-    async for batch in fetch_new_trades_in_batches(since_time, source):
+    async for batch in fetch_new_trades_in_batches(since_time, source, 2000, interval):
         trades_df = pd.DataFrame(batch)
         optimize_dataframe(trades_df)
         batch_ohlc_data = calculate_ohlc(trades_df, intervals={label: interval})
@@ -257,6 +267,7 @@ async def update_ohlc_for_interval(label, since_time, source):
         await save_ohlc_data(ohlc_data, datetime.now())
     else:
         logging.info(f"No new OHLC data to save for interval: {label} and source: {source}")
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 def merge_ohlc_data(ohlc_data, trade_ohlc_data):
@@ -275,7 +286,8 @@ def merge_ohlc_data(ohlc_data, trade_ohlc_data):
                     ])
 
 
-async def fetch_new_trades_in_batches(since_time, source, batch_size=20000):
+# ─── MODIFIED FUNCTION: fetch_new_trades_in_batches ──────────────────────────
+async def fetch_new_trades_in_batches(since_time, source, batch_size=20000, interval=None):
     logging.info(f"get new trades since {since_time}, from {source}")
     
     client = get_client()
@@ -284,8 +296,16 @@ async def fetch_new_trades_in_batches(since_time, source, batch_size=20000):
 
     query = {'source': source}
     if since_time:
-        since_time_str = since_time.strftime('%Y-%m-%dT%H:%M:%S')
-        query['time'] = {'$gt': since_time_str}
+        if interval == '1D':
+            # For daily candle, restrict query to trades from the complete previous day.
+            start_of_day = since_time.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_of_day = start_of_day + timedelta(days=1)
+            start_time_str = start_of_day.strftime('%Y-%m-%dT%H:%M:%S')
+            end_time_str = end_of_day.strftime('%Y-%m-%dT%H:%M:%S')
+            query['time'] = {'$gte': start_time_str, '$lt': end_time_str}
+        else:
+            since_time_str = since_time.strftime('%Y-%m-%dT%H:%M:%S')
+            query['time'] = {'$gt': since_time_str}
 
     cursor = collection.find(query, projection={
                                 '_id': 0,
@@ -313,3 +333,4 @@ async def fetch_new_trades_in_batches(since_time, source, batch_size=20000):
         yield batch
 
     client.close()
+# ─────────────────────────────────────────────────────────────────────────────
