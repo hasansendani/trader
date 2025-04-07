@@ -67,7 +67,7 @@ def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
             # Perform a single resample operation with multiple aggregations
             resampled = group.resample(interval).agg({
                 'price': ['first', 'max', 'min', 'last',
-                          'mean', 'median', 'count'],
+                          'mean', 'median', 'std', 'count'],
                 'amount': 'sum'
             })
 
@@ -86,6 +86,7 @@ def calculate_ohlc(trades_df: pd.DataFrame, intervals=None):
                 'price_last': 'close',
                 'price_mean': 'mean',
                 'price_median': 'median',
+                'price_std': 'std',
                 'price_count': 'count',
                 'amount_sum': 'volume'
             }, inplace=True)
