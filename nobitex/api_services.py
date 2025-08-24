@@ -1,6 +1,6 @@
 from aiohttp import ClientSession
 
-BASE_URL = "https://api.nobitex.ir/"
+BASE_URL = "https://apiv2.nobitex.ir/"
 
 async def get_json(url):
     """
