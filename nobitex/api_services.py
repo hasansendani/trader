@@ -2,6 +2,7 @@ from aiohttp import ClientSession
 
 BASE_URL = "https://apiv2.nobitex.ir/"
 
+
 async def get_json(url):
     """
     Get JSON from url
@@ -9,14 +10,14 @@ async def get_json(url):
     async with ClientSession() as session:
         async with session.get(url) as response:
             data = await response.json(encoding='utf8')
-            if response.status == 200 and data['status'] == 'ok': 
+            if response.status == 200 and data['status'] == 'ok':
                 return data
             else:
                 return None
 
 
 async def get_symbols():
-    url = BASE_URL + "v2/orderbook/all"
+    url = BASE_URL + "margin/markets/list"
     return await get_json(url)
 
 
