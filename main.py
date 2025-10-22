@@ -3,7 +3,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from bitpin.api_services import get_last_trades as last_bitpin
 from bitpin.parser import get_last_trades_parser as last_trade_parser_bitpin
 from bitpin.markets import markets
-from dbservice import write
 from wallex.api_service import get_last_trade as last_wallex, get_symbols
 from wallex.parser import last_trade_parser as last_trade_parser_wallex, \
     get_symbols_parser
@@ -15,45 +14,47 @@ from ramzinex.parser import get_recent_parser as get_recent_parser_ramzinex, \
 from ohlc import create_ohlc, update_ohlc_intervals
 
 
+async def write_new_trades_only(matches):
+    from dbservice import redis_client, write_bulk
+
+    # Find the first trade that already exists
+    first_existing_index = None
+    for i, match in enumerate(matches):
+        if redis_client.exists(match['unifier']):
+            first_existing_index = i
+            break
+
+    if first_existing_index is None:
+        await write_bulk(matches)
+    else:
+        new_trades = matches[:first_existing_index]
+        if new_trades:
+            await write_bulk(new_trades)
+
+
 async def call_and_save_nobitex(market_name):
     from nobitex.api_services import get_last_trades
     from nobitex.parser import get_last_trade_parser
     data = await get_last_trades(market_name)
     matches = get_last_trade_parser(data, market_name)
-    for match in matches:
-        try:
-            await write(match)
-        except ValueError:
-            break
+    await write_new_trades_only(matches)
 
 
 async def call_and_save_bitpin(key, val):
     data = await last_bitpin(val)
     matches = last_trade_parser_bitpin(data, key)
-    for match in matches:
-        try:
-            await write(match)
-        except ValueError:
-            break
+    await write_new_trades_only(matches)
 
 
 async def call_and_save_wallex(market):
     matches = last_trade_parser_wallex(await last_wallex(market))
-    for match in matches:
-        try:
-            await write(match)
-        except ValueError:
-            break
+    await write_new_trades_only(matches)
 
 
 async def call_and_save_ramzinex(market_name, pair_id):
     data = await last_trades_ramzinex(pair_id)
     matches = get_recent_parser_ramzinex(data, market_name)
-    for match in matches:
-        try:
-            await write(match)
-        except ValueError:
-            break
+    await write_new_trades_only(matches)
 
 
 async def get_wallex_data():
@@ -106,11 +107,7 @@ async def call_and_save_tabdeal(market_id, market_name):
     from tabdeal.parser import get_last_trade_parser
     last_trades = get_last_trade_parser(await get_last_trades(market_id),
                                         market_name)
-    for trade in last_trades:
-        try:
-            await write(trade)
-        except ValueError:
-            break
+    await write_new_trades_only(last_trades)
 
 
 async def main():
