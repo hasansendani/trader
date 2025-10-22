@@ -15,13 +15,15 @@ def get_symbols_parser(data, filter: list[str] = []):
 def get_last_trade_parser(data, market_name):
     matches = [
         {
-            "time": datetime.datetime.fromtimestamp(match["time"] // 1000).isoformat(),
+            "time": datetime.datetime.fromtimestamp(match["time"] // 1000)
+                            .isoformat(),
             "price": float(match["price"]),
             "amount": float(match["volume"]),
             "type": match['type'],
             "market_name": market_name,
             "source": "nobitex",
-            "unifier": md5((str(match["time"]) + match['volume'] + match['price']).encode()).hexdigest()[:10]
+            "unifier": md5((str(match["time"]) + match['volume'])
+                           .encode()).hexdigest()[:10]
 
         } for match in data["trades"]
     ]
